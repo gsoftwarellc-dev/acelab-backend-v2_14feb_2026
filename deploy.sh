@@ -1,54 +1,46 @@
-#!/bin/bash
-
 # AcelabTutors Deployment Script
 # Usage: ./deploy.sh
 
-echo "🚀 Starting Deployment..."
+LOG_FILE="deploy.log"
+exec > >(tee -a "$LOG_FILE") 2>&1
 
-# 1. Pull latest changes
-echo "📦 Pulling latest changes from Git..."
-git pull origin main
+echo "-------------------------------------------"
+echo "🚀 Starting Deployment at $(date)"
+echo "-------------------------------------------"
+
+# 1. Pull latest changes (optional if Hostinger already did it)
+echo "📦 Checking for Git updates..."
+if [ -d .git ]; then
+    git pull origin main || echo "⚠️ Git pull failed or redundant (ignoring)"
+else
+    echo "⚠️ Not a git repository, skipping pull."
+fi
 
 # 2. Backend (Laravel) Updates
 echo "🐘 Updating Backend..."
-cd backend
-
-# Install PHP dependencies (optimized for production)
-echo "   - Installing Composer dependencies..."
-composer install --no-interaction --prefer-dist --optimize-autoloader
-
-# Run Database Migrations
-echo "   - Running Database Migrations..."
-php artisan migrate --force
-
-# Clear and Cache Configuration
-echo "   - Optimizing Configuration & Routes..."
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-
-# Restart Queue Worker (if using supervisor, otherwise skip)
-# echo "   - Restarting Queue Worker..."
-# php artisan queue:restart
-
-cd ..
+if [ -d backend ]; then
+    cd backend
+    composer install --no-interaction --prefer-dist --optimize-autoloader
+    php artisan migrate --force
+    php artisan config:cache
+    php artisan route:cache
+    php artisan view:cache
+    cd ..
+else
+    echo "❌ Error: backend/ directory not found!"
+fi
 
 # 3. Frontend (Next.js) Updates
 echo "⚛️ Updating Frontend..."
-cd frontend
+if [ -d frontend ]; then
+    cd frontend
+    npm install
+    npm run build
+    cd ..
+else
+    echo "❌ Error: frontend/ directory not found!"
+fi
 
-# Install Node dependencies
-echo "   - Installing NPM dependencies..."
-npm install
+echo "✅ Deployment Complete at $(date)"
+echo "-------------------------------------------"
 
-# Build the application
-echo "   - Building Next.js app..."
-npm run build
-
-# Note: On some shared hosting, you might need to restart the Node process manually 
-# or via a manager like PM2. If using PM2:
-# pm2 restart acelabtutors
-
-cd ..
-
-echo "✅ Deployment Complete! Website is live with latest changes."
