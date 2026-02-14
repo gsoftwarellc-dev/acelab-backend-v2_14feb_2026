@@ -1,0 +1,19 @@
+{
+    "name": "gsoftwarellc/acelabtutors-root",
+    "description": "Root bridge for Hostinger deployment",
+    "type": "project",
+    "require": {
+        "php": "^8.2"
+    },
+    "scripts": {
+        "post-install-cmd": [
+            "@deploy"
+        ],
+        "post-update-cmd": [
+            "@deploy"
+        ],
+        "deploy": [
+            "bash ./deploy.sh"
+        ]
+    }
+}
